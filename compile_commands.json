@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/zefresk/Nextcloud/programmation/cpp/fea/nosync_build",
+  "command": "/usr/bin/clang++  -I/home/zefresk/Nextcloud/programmation/cpp/fea/include -g -std=gnu++2b -Wall -Wextra -Wpedantic -g -o CMakeFiles/ea.dir/src/lib.cpp.o -c /home/zefresk/Nextcloud/programmation/cpp/fea/src/lib.cpp",
+  "file": "/home/zefresk/Nextcloud/programmation/cpp/fea/src/lib.cpp",
+  "output": "CMakeFiles/ea.dir/src/lib.cpp.o"
+},
+{
+  "directory": "/home/zefresk/Nextcloud/programmation/cpp/fea/nosync_build",
+  "command": "/usr/bin/clang++  -I/home/zefresk/Nextcloud/programmation/cpp/fea/include -g -std=gnu++2b -Wall -Wextra -Wpedantic -g -o CMakeFiles/Fea.dir/src/main.cpp.o -c /home/zefresk/Nextcloud/programmation/cpp/fea/src/main.cpp",
+  "file": "/home/zefresk/Nextcloud/programmation/cpp/fea/src/main.cpp",
+  "output": "CMakeFiles/Fea.dir/src/main.cpp.o"
+}
+]
