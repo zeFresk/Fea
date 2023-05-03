@@ -60,10 +60,11 @@ struct constexpr_dis {
 	template <typename Gen>
 	constexpr T operator()(Gen&& gen) const
 	{
-		T to_mul = max / static_cast<T>(gen.max());
-		T to_sub = min - (static_cast<T>(gen.min()) * to_mul);
-		auto v = static_cast<T>(gen());
-		return (v - to_sub) * to_mul;
+		// https://math.stackexchange.com/questions/314244/scaling-a-uniform-distribution-probability
+		const auto v = static_cast<T>(gen());
+		const auto moved = v - static_cast<T>(gen.min());
+		const auto scaled = (moved * (max-min)) / (static_cast<T>(gen.max()) - static_cast<T>(gen.min()));
+		return scaled-min;
 	}
 };
 

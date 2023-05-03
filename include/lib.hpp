@@ -134,7 +134,7 @@ class Ea
 	PCG gen;
 
     public:
-	constexpr Ea(std::size_t n) : individuals(n), childrens(n), gen{ 0, seed() }
+	constexpr Ea(size_t n) : individuals(n), childrens(n), gen{ 0, seed() }
 	{
 		if consteval {
 			std::for_each(individuals.begin(), individuals.end(),
@@ -155,16 +155,22 @@ class Ea
 		}
 	}
 
-	constexpr Genome const& best_individual() const
+	template <typename X, typename Y>
+	constexpr Genome const& best_individual(X&& x, Y&& y) const
 	{
+		std::vector<decltype(std::declval<Genome>().evaluate(x, y))> evaluations(individuals.size());
+		auto best_it = evaluations.cend();
 		if consteval {
-			return std::min_element(individuals.cbegin(), individuals.cend(),
-						[](auto&& lhs, auto&& rhs) { return lhs.evaluate() < rhs.evaluate(); });
-
+			std::transform(individuals.cbegin(), individuals.cend(), evaluations.begin(),
+				       [&](auto&& genome) { return genome.evaluate(x, y); });
+			best_it = std::min_element(evaluations.cbegin(), evaluations.cend());
 		} else {
-			return std::min_element(std::execution::par, individuals.cbegin(), individuals.cend(),
-						[](auto&& lhs, auto&& rhs) { return lhs.evaluate() < rhs.evaluate(); });
+			std::transform(std::execution::par, individuals.cbegin(), individuals.cend(),
+				       evaluations.begin(), [&](auto&& genome) { return genome.evaluate(x, y); });
+			best_it = std::min_element(std::execution::par, evaluations.cbegin(), evaluations.cend());
 		}
+		auto best_idx = std::distance(evaluations.cbegin(), best_it);
+		return individuals[best_idx];
 	}
 
     private:
@@ -194,20 +200,23 @@ class Ea
 		for (size_t i = 0; i < nb_gens; ++i) {
 			std::transform(std::execution::par, individuals.cbegin(), individuals.cend(),
 				       evaluations.begin(), [&](auto&& genome) { return genome.evaluate(x, y); });
-			std::for_each(std::execution::par, childrens.begin(), childrens.end(), [&, this](auto& child) {
+			std::generate(std::execution::par, childrens.begin(), childrens.end(), [&, this]() {
 				auto& parent1 = selector(individuals, evaluations, this->gen);
 				auto& parent2 = selector(individuals, evaluations, this->gen);
 				auto ret = parent1.xover(parent2, this->gen);
 				ret.mutate(p_mutation, this->gen);
-				child = std::move(ret);
+				return std::move(ret);
 			});
+			auto best_it = std::min_element(std::execution::par, evaluations.cbegin(), evaluations.cend());
+			auto best_idx = std::distance(evaluations.cbegin(), best_it);
+			childrens[0] = std::move(individuals[best_idx]);
 			std::swap(childrens, individuals);
 
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::system_clock::now() - started_at);
 			std::cout << "Gen " << i + 1 << " : best individual has fitness = "
-				  << *std::min_element(std::execution::par, evaluations.cbegin(), evaluations.cend()) << " [" << elapsed.count() / 1000.f
-				  << "s]" << std::endl;
+				  << *std::min_element(std::execution::par, evaluations.cbegin(), evaluations.cend())
+				  << " [" << elapsed.count() / 1000.f << "s]" << std::endl;
 		}
 	}
 };

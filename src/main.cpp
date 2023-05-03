@@ -21,19 +21,31 @@ struct Params {
 	}
 };
 
+template <typename T>
+std::ostream& operator<<(std::ostream& os, Params<T> const& p) {
+	os << "(scaling=" << p.scaling << ", decay=" << p.decay << ", frequency=" << p.frequency << ", phase=" << p.phase << ")";
+	return os;
+}
+
 int main()
 {
-	constexpr auto noise_level = 1e-2f;
-	constexpr size_t nb_sin = 1;
-	constexpr std::array<Params<f_t>, nb_sin> truth = { { { 1.4f, 1.421f, 0.333f, 0.125f } } };
+	static constexpr auto noise_level = 1e-2f;
+	static constexpr constexpr_dis<f_t> noise_dis{ 0, noise_level*2.f };
+	constexpr size_t nb_sin = 3;
+	constexpr std::array<Params<f_t>, nb_sin> truth = {
+		{ { 0.9f, 0.6f, 0.333f, 0.125f }, { 0.5f, 0.1f, 0.6666f, 0.0f }, { 0.4f, 0.01f, 1.4f, 0.f } }
+	};
 	auto data = generate_data(0.0f, 10.24f, 0.01f, [&](f_t x) {
-		return std::accumulate(truth.cbegin(), truth.cend(), 0.f,
-				       [=](auto lhs, auto&& rhs) { return lhs + rhs.evaluate(x); });
+		PCG pcg{0, seed()};
+		auto perfect = std::accumulate(truth.cbegin(), truth.cend(), 0.f,
+					       [=](auto lhs, auto&& rhs) { return lhs + rhs.evaluate(x); });
+		auto noise = noise_dis(pcg) - noise_level;
+		return perfect + perfect * noise;
 	});
 	const auto [x, y] = data;
 
 	static constexpr constexpr_dis<f_t> dpi_dis{ 0.f, 2.f * std::numbers::pi_v<f_t> };
-	static constexpr constexpr_dis<f_t> scale_dis{ 0.f, 10.f };
+	static constexpr constexpr_dis<f_t> scale_dis{ 0.f, 1.f };
 	static constexpr constexpr_dis<f_t> decay_dis{ 0.f, 1.0f };
 	static constexpr constexpr_dis<size_t> param_dis{ 1, 4 };
 
@@ -86,8 +98,17 @@ int main()
 
 	using ea_t = Ea<genome_t, selector>;
 
-	auto ea = ea_t{ 1000 };
-	ea.loop(x, y, 100, 0.1);
+	auto ea = ea_t{ 100000 };
+	ea.loop(x, y, 250, 0.5);
+	decltype(auto) best = ea.best_individual(x, y);
+	auto fitness = best.evaluate(x, y);
+	decltype(auto) params = best.get_data();
+
+	std::cout << "\n#END#\nBest individual has fitness: " << fitness << "\n";
+	for (auto const& p : params) {
+		std::cout << p << "\n";
+	}
+	std::cout << std::endl;
 
 	return 0;
 }
