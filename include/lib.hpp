@@ -12,36 +12,7 @@
 
 #include "rnd.hpp"
 
-template <typename T, typename F>
-constexpr auto generate_data(T&& start, T&& end, T&& inc, F&& f)
-	-> std::pair<std::vector<T>, std::vector<decltype(f(T{}))>>
-{
-	auto size = static_cast<std::size_t>((end - start) / inc);
-
-	std::vector<T> x;
-	std::vector<T> y;
-	x.reserve(size);
-	y.reserve(size);
-
-	for (std::size_t i = 0; i < size; ++i) {
-		auto cur_x = start + static_cast<T>(i) * inc;
-		x.push_back(cur_x);
-		y.push_back(f(cur_x));
-	}
-
-	return { x, y };
-}
-
-template <typename T>
-struct return_type : return_type<decltype(&T::operator())> {
-};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct return_type<ReturnType (ClassType::*)(Args...) const> {
-	using type = ReturnType;
-};
-
-template <typename P, std::size_t N, auto initializer, auto mutator, auto evaluator>
+template <typename P, std::size_t N, auto initializer, auto mutator, auto evaluator, auto optimiser>
 class Genome
 {
 	//using helper_t = typename decltype(std::function{ evaluator })::result_type;
@@ -116,6 +87,11 @@ class Genome
 		//	evaluation = evaluator(data, std::forward<X>(x), std::forward<Y>(y));
 		//}
 		return evaluator(data, std::forward<X>(x), std::forward<Y>(y)); //*evaluation;
+	}
+
+	template <typename X, typename Y, typename Gen>
+	constexpr auto optimise(X&& x, Y&& y, Gen&& gen) {
+		optimiser(data, std::forward<X>(x), std::forward<Y>(y), std::forward<Gen>(gen));
 	}
 
 	constexpr decltype(data) const& get_data() const
@@ -210,6 +186,7 @@ class Ea
 			auto best_it = std::min_element(std::execution::par, evaluations.cbegin(), evaluations.cend());
 			auto best_idx = std::distance(evaluations.cbegin(), best_it);
 			childrens[0] = std::move(individuals[best_idx]);
+			childrens[0].optimise(std::forward<X>(x), std::forward<Y>(y), this->gen);
 			std::swap(childrens, individuals);
 
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
