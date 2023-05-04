@@ -72,13 +72,13 @@ class Genome
 		Genome nouveau{};
 
 		size_t loc;
-		if consteval {
-			auto dis = constexpr_dis<size_t>{ 0, N - 1 };
+		/*if consteval {*/
+			auto dis = constexpr_dis<size_t>{ 0, N };
 			loc = dis(gen);
-		} else {
-			auto dis = std::uniform_int_distribution<>(0, N - 1);
+		/*} else {
+			auto dis = std::uniform_int_distribution<>(0, N);
 			loc = dis(gen);
-		}
+		}*/
 		std::copy(data.cbegin(), data.cbegin() + loc, nouveau.data.begin());
 		std::copy(oth.data.cbegin(), oth.data.cbegin() + (N - loc), nouveau.data.begin() + loc);
 		return nouveau;
@@ -97,13 +97,13 @@ class Genome
 	constexpr void mutate_once(Gen& gen)
 	{
 		size_t i = 0;
-		if consteval {
-			auto dis = constexpr_dis<size_t>{ 0, N - 1 };
+		/*if consteval {*/
+			auto dis = constexpr_dis<size_t>{ 0, N };
 			i = dis(gen);
-		} else {
-			auto dis = std::uniform_int_distribution<>(0, N - 1);
+		/*} else {
+			auto dis = std::uniform_int_distribution<>(0, N);
 			i = dis(gen);
-		}
+		}*/
 		data[i] = mutator(data[i], gen);
 		//if (evaluation)
 		//	evaluation = std::nullopt;

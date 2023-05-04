@@ -29,11 +29,13 @@ std::ostream& operator<<(std::ostream& os, Params<T> const& p) {
 
 int main()
 {
+	//auto [min, max, mean, z] = check_uniform_distribution(PCG{}, constexpr_dis<size_t>{0, 10000}, 1000000);
+	//std::cout << "min: " << min << " | max: " << max << " | mean : " << mean << " | z: " << z << std::endl;
 	static constexpr auto noise_level = 1e-2f;
 	static constexpr constexpr_dis<f_t> noise_dis{ 0, noise_level*2.f };
 	constexpr size_t nb_sin = 3;
 	constexpr std::array<Params<f_t>, nb_sin> truth = {
-		{ { 0.9f, 0.6f, 0.333f, 0.125f }, { 0.5f, 0.1f, 0.6666f, 0.0f }, { 0.4f, 0.01f, 1.4f, 0.f } }
+		{ { 0.9f, 0.6f, 0.333f, 0.125f }, { 0.5f, 0.1f, 0.6666f, 0.0f }, { 0.4f, 0.01f, 0.4f, 0.f } }
 	};
 	auto data = generate_data(0.0f, 10.24f, 0.01f, [&](f_t x) {
 		PCG pcg{0, seed()};
@@ -44,28 +46,26 @@ int main()
 	});
 	const auto [x, y] = data;
 
-	static constexpr constexpr_dis<f_t> dpi_dis{ 0.f, 2.f * std::numbers::pi_v<f_t> };
-	static constexpr constexpr_dis<f_t> scale_dis{ 0.f, 1.f };
-	static constexpr constexpr_dis<f_t> decay_dis{ 0.f, 1.0f };
+	static constexpr constexpr_dis<f_t> one_dis{0.f, 1.f};
 	static constexpr constexpr_dis<size_t> param_dis{ 1, 4 };
 
 	static constexpr auto initializer = [](auto& gen) {
-		return Params<f_t>{ scale_dis(gen), decay_dis(gen), dpi_dis(gen), dpi_dis(gen) };
+		return Params<f_t>{ one_dis(gen), one_dis(gen), one_dis(gen), one_dis(gen) };
 	};
 	static constexpr auto mutator = [](auto&& p, auto& gen) {
 		auto ret = p;
 		switch (param_dis(gen)) {
 		case 1:
-			ret.scaling = scale_dis(gen);
+			ret.scaling = one_dis(gen);
 			break;
 		case 2:
-			ret.decay = decay_dis(gen);
+			ret.decay = one_dis(gen);
 			break;
 		case 3:
-			ret.frequency = dpi_dis(gen);
+			ret.frequency = one_dis(gen);
 			break;
 		case 4:
-			ret.phase = dpi_dis(gen);
+			ret.phase = one_dis(gen);
 			break;
 		default:
 			(void)(0);
@@ -99,7 +99,7 @@ int main()
 	using ea_t = Ea<genome_t, selector>;
 
 	auto ea = ea_t{ 100000 };
-	ea.loop(x, y, 250, 0.5);
+	ea.loop(x, y, 250, 0.1);
 	decltype(auto) best = ea.best_individual(x, y);
 	auto fitness = best.evaluate(x, y);
 	decltype(auto) params = best.get_data();
